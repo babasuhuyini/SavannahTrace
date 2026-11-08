@@ -1,1 +1,34 @@
+name: Supabase keep-alive
 
+# Stops the Free-plan Supabase project from pausing (it pauses after about a week
+# without database activity). Runs every two days and can be run by hand.
+# Needs two repository secrets (Settings → Secrets and variables → Actions):
+#   SUPABASE_URL                   e.g. https://abcd1234.supabase.co
+#   SUPABASE_PUBLISHABLE_KEY       the publishable (anon) key — browser-safe
+# A failed run means the project did not answer (paused or down): GitHub emails
+# the repository owner, which doubles as a simple uptime alert.
+
+on:
+  schedule:
+    - cron: '17 6 */2 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Touch the database
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "Secrets SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY are not set; skipping."; exit 0
+          fi
+          code=$(curl -s -o response.txt -w "%{http_code}" -X POST "$SUPABASE_URL/rest/v1/rpc/keepalive" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" -H "Content-Type: application/json" -d '{}')
+          echo "HTTP $code: $(cat response.txt)"
+          test "$code" = "200"

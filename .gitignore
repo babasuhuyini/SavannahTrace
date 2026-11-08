@@ -1,0 +1,30 @@
+# dependencies & build output
+node_modules/
+dist/
+*.tsbuildinfo
+
+# local environment — real values never go in Git
+.env
+.env.*
+!.env.example
+
+# Supabase CLI local state
+supabase/.temp/
+supabase/.branches/
+supabase/.env
+
+# editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# never commit real operational data
+*.xlsx
+*.csv
+real-data/
+
+# marker used by scripts/export-for-github.mjs
+.savannah-trace-export

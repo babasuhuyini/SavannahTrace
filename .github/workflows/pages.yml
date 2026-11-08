@@ -1,0 +1,54 @@
+name: Deploy to GitHub Pages
+
+# Builds the app and publishes it to https://<owner>.github.io/<repo>/ on every push to main.
+# One-time setup: repository Settings → Pages → Build and deployment → Source: "GitHub Actions".
+#
+# Without the variables below the site runs in DEMO mode (fictional data in the browser).
+# For LIVE mode add repository *variables* (Settings → Secrets and variables → Actions →
+# Variables). They are browser-safe by design — never put the secret/service key here.
+#   VITE_SUPABASE_URL               https://<ref>.supabase.co
+#   VITE_SUPABASE_PUBLISHABLE_KEY   sb_publishable_...
+#   VITE_APP_URL                    https://<owner>.github.io/<repo>/
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_APP_URL: ${{ vars.VITE_APP_URL }}
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
