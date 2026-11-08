@@ -1,5 +1,7 @@
 # Supabase setup — step by step
 
+> **Status (8 Nov 2026):** project `xinbkypxnegzokpohazz` (Savannah Trace, eu-central-1) is linked. Steps 1–3, 5 and 6 (except the function secrets) are done, and the test site is configured as the Site URL. Remaining: function secrets (step 6), the first admin (step 8), then SMTP (step 4) when ready.
+
 For: the person setting up the hosted Savannah Trace project (Windows, no Docker needed).
 Decided by SFCL (8 Nov 2026): **EU region, Free plan to start.** Dashboard menu names change from time to time; if a label below differs slightly, look for the nearest match.
 
@@ -71,7 +73,7 @@ The built-in Supabase mailer sends only about **2 emails per hour** and is for t
    | Minimum interval between emails | `60` seconds (per user) |
 
 6. **Raise the send limit:** Authentication → **Rate Limits** → *emails sent per hour* → `30`. It drops to a low value when SMTP is first enabled.
-7. **Paste the branded templates:** Authentication → Emails → **Templates**:
+7. **Branded templates** (Supabase only allows this once custom SMTP is on). Either uncomment the template sections in `supabase/config.toml` and run `npx supabase config push`, or paste them in the Dashboard: Authentication → Emails → **Templates**:
    - **Magic Link**: subject `Your Savannah Trace sign-in code`; body = contents of `supabase/templates/magic_link.html`. It shows the 6-digit `{{ .Token }}` the app asks for.
    - **Confirm signup**: same subject and body as Magic Link. An invited user whose link has expired receives this one when asking for a code.
    - **Invite user**: subject `You have been invited to Savannah Trace`; body = `supabase/templates/invite.html`.

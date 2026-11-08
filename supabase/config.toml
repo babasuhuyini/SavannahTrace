@@ -10,7 +10,7 @@ port = 54321
 # Only `public` is exposed through the Data API. The `private` schema (authorization
 # helpers) is deliberately NOT listed.
 schemas = ["public"]
-extra_search_path = ["public"]
+extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
 [db]
@@ -23,8 +23,9 @@ sql_paths = ["./seed.sql"]
 
 [auth]
 enabled = true
-site_url = "http://localhost:5173"
-additional_redirect_urls = ["http://localhost:5173", "http://127.0.0.1:5173"]
+# Hosted test site (GitHub Pages). Change both when trace.savannahfruits.com goes live.
+site_url = "https://babasuhuyini.github.io/SavannahTrace/"
+additional_redirect_urls = ["https://babasuhuyini.github.io/SavannahTrace/**", "http://localhost:5173/**", "http://127.0.0.1:5173/**"]
 jwt_expiry = 3600
 enable_refresh_token_rotation = true
 # Invitation only: nobody can create an account by themselves (OTP or Google).
@@ -37,27 +38,31 @@ email_sent = 10
 token_verifications = 30
 
 [auth.email]
-enable_signup = false
+# Email provider on (codes + invitations); sign-ups stay off via [auth] enable_signup.
+enabled = true
 double_confirm_changes = true
 enable_confirmations = true
 otp_length = 6
 otp_expiry = 3600 # also the lifetime of invitation links
 max_frequency = "60s"
 
+# NOTE: Supabase blocks template changes on Free projects until custom SMTP is set
+# (docs/SUPABASE_SETUP.md §4). After SMTP is configured, uncomment the sections below
+# and run `npx supabase config push`.
 # Branded templates (local dev). For the hosted project paste the same files into
 # Dashboard → Authentication → Emails → Templates — see docs/SUPABASE_SETUP.md §4.
-[auth.email.template.magic_link]
-subject = "Your Savannah Trace sign-in code"
-content_path = "./supabase/templates/magic_link.html"
+# [auth.email.template.magic_link]
+# subject = "Your Savannah Trace sign-in code"
+# content_path = "./supabase/templates/magic_link.html"
 
 # An invited user whose link expired and who asks for a code gets the confirmation email.
-[auth.email.template.confirmation]
-subject = "Your Savannah Trace sign-in code"
-content_path = "./supabase/templates/magic_link.html"
+# [auth.email.template.confirmation]
+# subject = "Your Savannah Trace sign-in code"
+# content_path = "./supabase/templates/magic_link.html"
 
-[auth.email.template.invite]
-subject = "You have been invited to Savannah Trace"
-content_path = "./supabase/templates/invite.html"
+# [auth.email.template.invite]
+# subject = "You have been invited to Savannah Trace"
+# content_path = "./supabase/templates/invite.html"
 
 [auth.external.google]
 enabled = false # set true once the Google Cloud OAuth client exists

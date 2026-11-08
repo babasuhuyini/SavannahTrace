@@ -3,12 +3,10 @@ name: Deploy to GitHub Pages
 # Builds the app and publishes it to https://<owner>.github.io/<repo>/ on every push to main.
 # One-time setup: repository Settings → Pages → Build and deployment → Source: "GitHub Actions".
 #
-# Without the variables below the site runs in DEMO mode (fictional data in the browser).
-# For LIVE mode add repository *variables* (Settings → Secrets and variables → Actions →
-# Variables). They are browser-safe by design — never put the secret/service key here.
-#   VITE_SUPABASE_URL               https://<ref>.supabase.co
-#   VITE_SUPABASE_PUBLISHABLE_KEY   sb_publishable_...
-#   VITE_APP_URL                    https://<owner>.github.io/<repo>/
+# The site connects to the Savannah Trace Supabase project (LIVE mode). To publish the
+# fictional DEMO instead, add the repository variable LIVE_MODE = false (Settings →
+# Secrets and variables → Actions → Variables) and re-run this workflow.
+# Only browser-safe values belong here — never the secret/service-role key.
 
 on:
   push:
@@ -36,9 +34,11 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
-          VITE_APP_URL: ${{ vars.VITE_APP_URL }}
+          # Browser-safe values (they are visible in the built site anyway). Repository
+          # variables of the same name override them; set LIVE_MODE=false to build the demo.
+          VITE_SUPABASE_URL: ${{ vars.LIVE_MODE != 'false' && (vars.VITE_SUPABASE_URL || 'https://xinbkypxnegzokpohazz.supabase.co') || '' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.LIVE_MODE != 'false' && (vars.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_34jCgQEwD15rAik87v2LIQ_qHzY8DsV') || '' }}
+          VITE_APP_URL: ${{ vars.VITE_APP_URL || 'https://babasuhuyini.github.io/SavannahTrace/' }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
