@@ -44,9 +44,14 @@ const email = (k: string) => `${k.toLowerCase()}@verify-sfcl.invalid`;
 for (const [k, id] of Object.entries(U))
   await db.query(`insert into auth.users (id, email, email_confirmed_at) values ($1, $2, $3)`, [id, email(k), k === 'unverified' ? null : new Date().toISOString()]);
 
-async function as<T>(uid: string | null, role: 'authenticated' | 'anon' | 'service_role', fn: (q: Q) => Promise<T>): Promise<T> {
+// Signed-in sessions default to aal2 (password + authenticator code), like a fully signed-in user.
+async function as<T>(uid: string | null, role: 'authenticated' | 'anon' | 'service_role', fn: (q: Q) => Promise<T>, aal: 'aal1' | 'aal2' = 'aal2'): Promise<T> {
   return db.transaction(async (tx) => {
-    await tx.query(`select set_config('request.jwt.claim.sub', $1, true), set_config('request.jwt.claim.role', $2, true)`, [uid ?? '', role]);
+    await tx.query(`select set_config('request.jwt.claim.sub', $1, true), set_config('request.jwt.claim.role', $2, true), set_config('request.jwt.claims', $3, true)`, [
+      uid ?? '',
+      role,
+      JSON.stringify(uid ? { sub: uid, role, aal } : { role }),
+    ]);
     await tx.query(`set local role ${role}`);
     return fn((sql, params) => tx.query(sql, params) as Promise<{ rows: Record<string, unknown>[] }>);
   });
@@ -284,6 +289,47 @@ check('Anonymous keep-alive call works (no data returned, only a timestamp)', ka
 await as(null, 'anon', (q) => q(`select public.keepalive()`));
 check('Keep-alive writes at most one heartbeat per hour', Number((await db.query(`select count(*)::int as n from private.heartbeat`)).rows[0] && ((await db.query(`select count(*)::int as n from private.heartbeat`)).rows[0] as { n: number }).n) === 1);
 await fails('Anonymous role still cannot read the heartbeat table', as(null, 'anon', (q) => q(`select * from private.heartbeat`)), /permission denied/);
+
+// ── password sign-in + mandatory authenticator (MFA) ─────────────────────────
+const aal1 = <T>(uid: string, fn: (q: Q) => Promise<T>) => as(uid, 'authenticated', fn, 'aal1');
+const n1 = async (uid: string, table: string) => Number((await aal1(uid, (q) => q(`select count(*)::int as n from ${table}`))).rows[0].n);
+check('Password only (no authenticator code yet): admin reads no events', (await n1(U.admin, 'public.events')) === 0);
+check('Password only: officer reads no locations, lots or ledger', (await n1(U.nutA, 'public.locations')) + (await n1(U.nutA, 'public.lots')) + (await n1(U.nutA, 'public.inventory_ledger')) === 0);
+check('Password only: no collector personal data', (await n1(U.nutB, 'public.collector_personal')) === 0);
+await fails('Password only: workflow functions refuse', aal1(U.nutA, (q) => q(`select public.record_purchase($1::jsonb)`, [JSON.stringify({ ...p1, idempotency_key: idem() })])), /authenticator/);
+await fails('Password only: admin functions refuse', aal1(U.admin, (q) => q(`select public.admin_list_users()`)), /authenticator/);
+await fails('Password only: workspace snapshot refused', aal1(U.admin, (q) => q(`select public.get_workspace_snapshot()`)), /No active access/);
+const ctx1 = (await aal1(U.nutA, (q) => q(`select public.get_my_context() as r`))).rows[0].r as Record<string, unknown>;
+check('Sign-in state is readable before the authenticator step (to choose the next screen)', ctx1.user_id === U.nutA && ctx1.aal === 'aal1' && ctx1.has_password === false && ctx1.mfa_enrolled === false, JSON.stringify(ctx1));
+await db.query(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.nutA]);
+await db.query(`insert into auth.mfa_factors (user_id, status) values ($1, 'verified')`, [U.nutA]);
+const ctx2 = (await aal1(U.nutA, (q) => q(`select public.get_my_context() as r`))).rows[0].r as Record<string, unknown>;
+check('has_password / mfa_enrolled come from Auth itself', ctx2.has_password === true && ctx2.mfa_enrolled === true, JSON.stringify(ctx2));
+check('get_my_context never returns the password hash', !JSON.stringify(ctx2).includes('$2a$'));
+const sec = await as(U.admin, 'authenticated', async (q) => (await q(`select public.admin_user_security($1, 'mfa_reset') as r`, [U.nutA])).rows[0].r as { email: string });
+check('IT Admin can authorise an authenticator reset (audited)', sec.email === email('nutA') && (await count(U.admin, `public.audit_log where action = 'user.mfa-reset'`)) === 1);
+await fails('IT Admin cannot reset their own authenticator', as(U.admin, 'authenticated', (q) => q(`select public.admin_user_security($1, 'mfa_reset')`, [U.admin])), /another IT Admin/);
+await fails('Non-admin cannot issue password reset links', as(U.nutB, 'authenticated', (q) => q(`select public.admin_user_security($1, 'password_reset')`, [U.nutA])), /cannot perform/);
+await fails('Password-only admin cannot issue reset links', aal1(U.admin, (q) => q(`select public.admin_user_security($1, 'password_reset')`, [U.nutA])), /authenticator/);
+
+// ── master data: collectors + bulk upload (all rows or none) ─────────────────
+await succeeds('IT Admin adds a collector to an existing area', rpc(U.admin, 'admin_upsert_collector', { code: 'DX01-CA9101-801', name: 'Verify Collector', area_code: 'DX01-CA9101' }));
+await fails('Collector code must start with its area code (never repaired)', rpc(U.admin, 'admin_upsert_collector', { code: 'DX02-CA9101-802', name: 'X', area_code: 'DX01-CA9101' }), /does not start with/);
+await fails('Collector in an unknown area is refused', rpc(U.admin, 'admin_upsert_collector', { code: 'ZZ01-CA0000-001', name: 'X', area_code: 'ZZ01-CA0000' }), /Unknown collection area/);
+await fails('Non-admin cannot add collectors', rpc(U.nutA, 'admin_upsert_collector', { code: 'DX01-CA9101-803', name: 'X', area_code: 'DX01-CA9101' }), /cannot perform/);
+const bulkOk = await as(U.admin, 'authenticated', async (q) =>
+  (await q(`select public.admin_bulk_upsert('collectors', $1::jsonb) as r`, [JSON.stringify([{ _row: 2, code: 'DX01-CA9101-901', name: 'Bulk One', area_code: 'DX01-CA9101' }, { _row: 3, code: 'DX01-CA9101-902', name: 'Bulk Two', area_code: 'DX01-CA9101' }])])).rows[0].r as { count: number });
+check('Bulk upload saves every row', bulkOk.count === 2 && (await count(U.admin, `public.collectors where code like 'DX01-CA9101-90_'`)) === 2);
+await fails(
+  'Bulk upload with one bad row is refused and names the row',
+  as(U.admin, 'authenticated', (q) => q(`select public.admin_bulk_upsert('collectors', $1::jsonb)`, [JSON.stringify([{ _row: 2, code: 'DX01-CA9101-903', name: 'Fine', area_code: 'DX01-CA9101' }, { _row: 3, code: 'BAD-1', name: 'Bad', area_code: 'DX01-CA9101' }])])),
+  /Row 3/,
+);
+check('…and nothing from that file was saved (all or nothing)', (await count(U.admin, `public.collectors where code = 'DX01-CA9101-903'`)) === 0);
+const ring = [[-1.0, 9.0], [-0.99, 9.0], [-0.99, 9.01], [-1.0, 9.0]];
+await succeeds('Bulk upload of collection areas (polygon + operational area)', as(U.admin, 'authenticated', (q) => q(`select public.admin_bulk_upsert('collection_areas', $1::jsonb)`, [JSON.stringify([{ _row: 2, code: 'ca-vf01-ca0001', area_code: 'VF01-CA0001', name: 'Verify Area', operational_area: 'Verify', polygon: ring, lat: 9.003, lng: -0.995, geometry_source: 'verify' }])])));
+await fails('Non-admin cannot bulk upload', as(U.nutA, 'authenticated', (q) => q(`select public.admin_bulk_upsert('collectors', '[{}]'::jsonb)`)), /cannot perform/);
+await fails('Unknown bulk type refused', as(U.admin, 'authenticated', (q) => q(`select public.admin_bulk_upsert('users', '[{}]'::jsonb)`)), /Unknown import type/);
 
 // ── report ───────────────────────────────────────────────────────────────────
 const failed = results.filter((r) => !r.ok);

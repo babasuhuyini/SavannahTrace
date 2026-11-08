@@ -1,7 +1,9 @@
-import { Info, Pencil, Plus } from 'lucide-react';
+import { FileSpreadsheet, Info, Pencil, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { GeoMap } from '../components/GeoMap';
-import { DemoBadge, Field, Modal, Seg } from '../components/ui';
+import { BulkImport } from '../components/BulkImport';
+import { DemoBadge, Drawer, Field, Modal, Seg } from '../components/ui';
+import { MASTER_KINDS, type ImportKind } from '../domain/import/specs';
 import type { CollectionArea, Location, LocationKind, ProcessingGroup, Route } from '../data/types';
 import { areaCentroid } from '../domain/engine';
 import { uid } from '../domain/format';
@@ -23,8 +25,14 @@ const kindLabel = (k: string) => KINDS.find((x) => x.v === k)?.l ?? k;
 type Tab = 'locations' | 'areas' | 'groups' | 'routes';
 
 export function Locations() {
-  const { db } = useStore();
+  const { db, mode } = useStore();
   const [tab, setTab] = useState<Tab>('locations');
+  const [bulk, setBulk] = useState<ImportKind | 'any' | null>(null);
+  const UploadBtn = ({ kind }: { kind: ImportKind }) => (
+    <button className="btn btn-sm" onClick={() => setBulk(kind)} title="Upload many at once from a CSV or Excel file">
+      <FileSpreadsheet size={14} /> Upload
+    </button>
+  );
   const [editLoc, setEditLoc] = useState<Location | null>(null);
   const [editArea, setEditArea] = useState<CollectionArea | null>(null);
   const [editGroup, setEditGroup] = useState<ProcessingGroup | null>(null);
@@ -35,10 +43,19 @@ export function Locations() {
     <div className="stack">
       <div className="page-head">
         <div>
-          <h1>Locations & sample data</h1>
-          <p>Add or edit demo facilities, collection-area geometry, processing groups and routes. Changes apply immediately to traces and maps, and are recorded in the audit history.</p>
+          <h1>{mode === 'demo' ? 'Locations & sample data' : 'Master data'}</h1>
+          <p>
+            Facilities, collection areas with their boundaries, collectors and processing groups. Add them one by one or upload a spreadsheet. Changes apply immediately to traces and
+            maps, and are recorded in the audit history.
+          </p>
+        </div>
+        <div className="actions">
+          <button className="btn btn-primary" onClick={() => setBulk('any')}>
+            <FileSpreadsheet size={16} /> Bulk upload
+          </button>
         </div>
       </div>
+      {mode === 'demo' && (
       <div className="finding review">
         <Info size={16} />
         <div>
@@ -48,6 +65,7 @@ export function Locations() {
           backend).
         </div>
       </div>
+      )}
 
       <div className="card">
         <div className="card-head">
@@ -77,9 +95,12 @@ export function Locations() {
         <div className="card">
           <div className="card-head">
             <h3>Facilities & waypoints</h3>
+            <span className="row" style={{ gap: 6 }}>
+            <UploadBtn kind="locations" />
             <button className="btn btn-sm btn-primary" onClick={() => setEditLoc({ id: uid('loc'), name: '', kind: 'phc', lat: 0, lng: 0, publicLabel: '', country: 'Ghana', demo: true })}>
               <Plus size={14} /> Add location
             </button>
+            </span>
           </div>
           <div className="table-wrap">
             <table className="table">
@@ -122,9 +143,12 @@ export function Locations() {
         <div className="card">
           <div className="card-head">
             <h3>Collection areas (certified forest reserves)</h3>
+            <span className="row" style={{ gap: 6 }}>
+            <UploadBtn kind="collection_areas" />
             <button className="btn btn-sm btn-primary" onClick={() => setEditArea({ id: uid('ca'), code: '', name: '', operationalArea: '', polygon: [], demo: true, geometrySource: 'Drawn in prototype' })}>
               <Plus size={14} /> Add area
             </button>
+            </span>
           </div>
           <div className="table-wrap">
             <table className="table">
@@ -174,9 +198,12 @@ export function Locations() {
           <div className="card">
             <div className="card-head">
               <h3>Processing groups</h3>
+              <span className="row" style={{ gap: 6 }}>
+              <UploadBtn kind="groups" />
               <button className="btn btn-sm btn-primary" onClick={() => setEditGroup({ id: uid('grp'), centreId: db.locations.find((l) => l.kind === 'butter-centre')?.id ?? '', name: '', members: 10, demo: true })}>
                 <Plus size={14} /> Add group
               </button>
+              </span>
             </div>
             <table className="table">
               <thead>
@@ -208,7 +235,8 @@ export function Locations() {
           </div>
           <div className="card">
             <div className="card-head">
-              <h3>Collectors (fictional, read-only)</h3>
+              <h3>{mode === 'demo' ? 'Collectors (fictional)' : `Collectors (${db.collectors.length})`}</h3>
+              <UploadBtn kind="collectors" />
             </div>
             <div className="table-wrap" style={{ maxHeight: 420, overflow: 'auto' }}>
               <table className="table">
@@ -265,6 +293,11 @@ export function Locations() {
         </div>
       )}
 
+      {bulk && (
+        <Drawer title="Bulk upload: master data" subtitle="CSV or Excel · reviewed before anything is saved · all valid rows are saved together" onClose={() => setBulk(null)} icon={<FileSpreadsheet size={26} />}>
+          <BulkImport kinds={MASTER_KINDS} initial={bulk === 'any' ? undefined : bulk} onDone={() => setBulk(null)} />
+        </Drawer>
+      )}
       {editLoc && <LocationEditor loc={editLoc} onClose={() => setEditLoc(null)} />}
       {editArea && <AreaEditor area={editArea} onClose={() => setEditArea(null)} />}
       {editGroup && <GroupEditor group={editGroup} onClose={() => setEditGroup(null)} />}

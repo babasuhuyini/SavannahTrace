@@ -1,4 +1,4 @@
-import { AlertTriangle, BookOpen, FileDown, ChevronDown, ClipboardList, Database, Eye, Handshake, LayoutDashboard, LogOut, Package, RefreshCcw, Route as RouteIcon, ShieldCheck, Users as UsersIcon } from 'lucide-react';
+import { AlertTriangle, BookOpen, FileDown, ChevronDown, ClipboardList, Database, Eye, Handshake, KeyRound, LayoutDashboard, LogOut, Package, RefreshCcw, Route as RouteIcon, ShieldCheck, Users as UsersIcon } from 'lucide-react';
 import { Suspense, lazy, useEffect, useRef, useState, type ReactNode } from 'react';
 import { BrandMark, Wordmark } from './components/Brand';
 import { Modal } from './components/ui';
@@ -6,7 +6,8 @@ import { severityCounts } from './domain/engine';
 import { PAGE_LABEL, ROLES, ROLE_ORDER, type PageId } from './domain/roles';
 import { useStore } from './domain/store';
 import { About } from './pages/About';
-import { AuthScreens } from './pages/auth/AuthScreens';
+import { Account } from './pages/auth/Account';
+import { AuthScreens, LinkLanding } from './pages/auth/AuthScreens';
 import { Handoffs } from './pages/Handoffs';
 import { Home, useWorkCount } from './pages/Home';
 import { Lots } from './pages/Lots';
@@ -46,6 +47,8 @@ export function App() {
         <CustomerTrace token={route.path[1] ?? ''} />
       </Suspense>
     );
+  // One-time invitation / password-reset link: handled before anything else (no session needed).
+  if (route.path[0] === 'welcome') return <LinkLanding tokenHash={route.query.get('token_hash') ?? ''} type={route.query.get('type') ?? 'invite'} />;
   if (store.loading) return <div className="empty" style={{ paddingTop: 120 }}>Checking your access…</div>;
   if (route.path[0] === 'auth' || !store.user) return <AuthScreens />;
   return <Shell />;
@@ -56,8 +59,9 @@ function Shell() {
   const { user, db, analysis, mode, signOut } = useStore();
   const workCount = useWorkCount();
   const role = ROLES[user!.role];
+  const isAccount = route.path[0] === 'account';
   const page = ((route.path[0] as PageId) || role.home) as PageId;
-  const allowed = role.nav.includes(page) || page === 'about' || (page === 'master' && mode === 'demo');
+  const allowed = !isAccount && (role.nav.includes(page) || page === 'about' || (page === 'master' && mode === 'demo'));
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -109,7 +113,10 @@ function Shell() {
             <span>{role.label}</span>
           </div>
         </div>
-        <button className="top-btn" onClick={() => signOut().then(() => go('/'))} title="Sign out">
+        <a className="top-btn" href="#/account" title="My account: password and sign-in security" aria-label="My account">
+          <KeyRound size={14} />
+        </a>
+        <button className="top-btn" onClick={() => signOut().then(() => go('/'))} title="Sign out" aria-label="Sign out">
           <LogOut size={14} />
         </button>
       </header>
@@ -130,7 +137,8 @@ function Shell() {
         </nav>
         <main className="main">
           <Suspense fallback={<Loading />}>
-            {!allowed && <NotAllowed page={page} />}
+            {isAccount && <Account />}
+            {!isAccount && !allowed && <NotAllowed page={page} />}
             {allowed && page === 'home' && <Home />}
             {allowed && page === 'lots' && <Lots />}
             {allowed && page === 'overview' && <Overview />}

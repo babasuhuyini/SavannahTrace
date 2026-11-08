@@ -1,6 +1,8 @@
-import { AlertTriangle, ChevronDown, Combine, Droplet, FlaskConical, Funnel, Handshake, Inbox, Nut, Plus, ShieldCheck, ShoppingBasket, Truck, Users } from 'lucide-react';
+import { AlertTriangle, ChevronDown, Combine, Droplet, FileSpreadsheet, FlaskConical, Funnel, Handshake, Inbox, Nut, Plus, ShieldCheck, ShoppingBasket, Truck, Users } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { BulkImport } from '../components/BulkImport';
 import { Drawer, FindingList, MarkerGlyph, Meter } from '../components/ui';
+import { eventKindsFor, type ImportKind } from '../domain/import/specs';
 import type { DemoDB, LotQty, ReceiveEvent, TransformEvent } from '../data/types';
 import { findingsFor, type Viewer } from '../domain/access';
 import { SFCL_TARGET, heldAt, type Analysis } from '../domain/engine';
@@ -21,7 +23,11 @@ export type FormSpec =
   | { f: 'aggregate'; eventId?: string }
   | { f: 'ready' }
   | { f: 'deliver' }
-  | { f: 'resolve'; eventId: string };
+  | { f: 'resolve'; eventId: string }
+  | { f: 'bulk'; kind?: ImportKind };
+
+/** The bulk upload that matches each single-entry form. */
+const BULK_FOR: Partial<Record<FormSpec['f'], ImportKind>> = { commission: 'purchases', ship: 'shipments', receive: 'receipts', issue: 'issues', transform: 'processing', aggregate: 'aggregation', ready: 'ready', deliver: 'deliveries' };
 
 interface Task {
   key: string;
@@ -374,8 +380,10 @@ export function Home() {
   const all = (k: string[]) => placesOfKind(analysis, k);
   const myLocs = [...viewer.locations];
 
+  const bulkKinds = eventKindsFor(user.role);
+  const bulkFor = form ? BULK_FOR[form.f] : undefined;
   const formTitle = (s: FormSpec) =>
-    s.f === 'commission' ? 'Record purchase' : s.f === 'issue' ? 'Issue ODK to processing group' : s.f === 'aggregate' ? 'SFCL aggregation' : s.f === 'ready' ? 'Arrived and ready for pickup' : s.f === 'deliver' ? 'Deliver to client' : s.f === 'resolve' ? 'Resolve discrepancy' : s.title;
+    s.f === 'bulk' ? 'Bulk upload' : s.f === 'commission' ? 'Record purchase' : s.f === 'issue' ? 'Issue ODK to processing group' : s.f === 'aggregate' ? 'SFCL aggregation' : s.f === 'ready' ? 'Arrived and ready for pickup' : s.f === 'deliver' ? 'Deliver to client' : s.f === 'resolve' ? 'Resolve discrepancy' : s.title;
   const formKind: MarkerKind = form
     ? form.f === 'commission'
       ? 'purchase'
@@ -409,6 +417,11 @@ export function Home() {
         </div>
         {primary && (
           <div className="actions">
+            {bulkKinds.length > 0 && (
+              <button className="btn btn-lg" onClick={() => setForm({ f: 'bulk' })} title="Upload many entries at once from a CSV or Excel file">
+                <FileSpreadsheet size={16} /> Bulk upload
+              </button>
+            )}
             <OtherActions actions={secondary} onPick={setForm} />
             <button className="btn btn-primary" onClick={() => setForm(primary.open)}>
               {primary.icon} {primary.label}
@@ -477,6 +490,15 @@ export function Home() {
 
       {form && (
         <Drawer title={formTitle(form)} subtitle={`${ROLES[user.role].label} · ${myLocs.length} assigned location${myLocs.length === 1 ? '' : 's'}`} onClose={close} icon={<MarkerGlyph kind={formKind} size={30} />}>
+          {bulkFor && bulkKinds.includes(bulkFor) && (
+            <p className="small" style={{ marginBottom: 12 }}>
+              Many to record?{' '}
+              <button className="link-btn" onClick={() => setForm({ f: 'bulk', kind: bulkFor })}>
+                Upload a CSV or Excel file instead
+              </button>
+            </p>
+          )}
+          {form.f === 'bulk' && <BulkImport kinds={bulkKinds} initial={form.kind} onDone={close} />}
           {form.f === 'commission' && <CommissionForm areas={mine(viewer, analysis, ['collection-area'])} onDone={close} />}
           {form.f === 'ship' && <ShipForm fromChoices={form.fromChoices} toChoices={form.toChoices} presetFrom={form.from} presetItems={form.items} onDone={close} />}
           {form.f === 'receive' && <ReceiveForm locations={form.locations} presetShipId={form.shipId} onDone={close} />}

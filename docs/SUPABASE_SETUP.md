@@ -1,6 +1,15 @@
 # Supabase setup — step by step
 
-> **Status (8 Nov 2026):** project `xinbkypxnegzokpohazz` (Savannah Trace, eu-central-1) is linked. Steps 1–3, 5 and 6 (except the function secrets) are done, and the test site is configured as the Site URL. Remaining: function secrets (step 6), the first admin (step 8), then SMTP (step 4) when ready.
+> **Status (9 Nov 2026):** project `xinbkypxnegzokpohazz` (Savannah Trace, eu-central-1) is linked. Steps 1–3, 5 and 6 (except the function secrets) were done on 8 Nov. On 9 Nov sign-in changed to **password + authenticator app (MFA)**: migration `20261109000100`, the updated `admin-users` function and the new auth settings must be deployed (step 6b). Remaining: step 6b, function secrets (step 6), the first admin (step 8), then SMTP (step 4) when ready.
+
+## How sign-in works
+
+1. IT invites a person in **Users & access** and copies the one-time link (or, once SMTP exists, emails it).
+2. The person opens the link, presses **Continue**, confirms their name and **chooses their own password** (12+ characters, letters and numbers, not common, not their name, not in a known data breach).
+3. They set up an **authenticator app** (Microsoft or Google Authenticator) by scanning a QR code.
+4. From then on: **email + password + the 6-digit code** from the app.
+
+The database refuses all data until step 3 is done in the current session (`aal2`), so a stolen password or a stolen mailbox alone gives nothing. IT never sees or sets a password. Forgotten password → IT issues a reset link (or the person uses *Forgot your password?*). Lost phone → IT presses **Reset authenticator**.
 
 For: the person setting up the hosted Savannah Trace project (Windows, no Docker needed).
 Decided by SFCL (8 Nov 2026): **EU region, Free plan to start.** Dashboard menu names change from time to time; if a label below differs slightly, look for the nearest match.
@@ -74,9 +83,10 @@ The built-in Supabase mailer sends only about **2 emails per hour** and is for t
 
 6. **Raise the send limit:** Authentication → **Rate Limits** → *emails sent per hour* → `30`. It drops to a low value when SMTP is first enabled.
 7. **Branded templates** (Supabase only allows this once custom SMTP is on). Either uncomment the template sections in `supabase/config.toml` and run `npx supabase config push`, or paste them in the Dashboard: Authentication → Emails → **Templates**:
-   - **Magic Link**: subject `Your Savannah Trace sign-in code`; body = contents of `supabase/templates/magic_link.html`. It shows the 6-digit `{{ .Token }}` the app asks for.
-   - **Confirm signup**: same subject and body as Magic Link. An invited user whose link has expired receives this one when asking for a code.
    - **Invite user**: subject `You have been invited to Savannah Trace`; body = `supabase/templates/invite.html`.
+   - **Reset password**: subject `Reset your Savannah Trace password`; body = `supabase/templates/recovery.html`.
+   Both link to the app's own confirmation page, which needs a click before the one-time token is used, so Microsoft Safe Links and similar scanners cannot use up a link.
+   Until SMTP is set, invitations work without email: IT copies the link from the app.
 8. **Test** after step 6 by inviting yourself (step 8). If nothing arrives, check Resend → Logs, then Supabase → Logs → Auth.
 
 *Alternative:* Brevo (free tier of about 300 emails/day; host `smtp-relay.brevo.com`, port 587). The steps are the same apart from the host and credentials.
@@ -86,7 +96,10 @@ The built-in Supabase mailer sends only about **2 emails per hour** and is for t
 Authentication → **Sign In / Providers** (and **Email**):
 
 - **Allow new users to sign up:** **off**. Access is by invitation only.
-- **Email provider:** on. **Confirm email:** on. **Email OTP length:** `6`. **Email OTP expiration:** `3600` seconds. Supabase uses this one setting for sign-in codes *and* invitation links, so a shorter value would expire invitations before people open them.
+- **Email provider:** on. **Confirm email:** on. **Email OTP expiration:** `86400` seconds (lifetime of invitation and password-reset links: 24 hours, single use).
+- **Passwords:** minimum length `12`, require letters and digits, **Secure password change** on.
+- **Multi-Factor:** TOTP (app authenticator) enabled. Phone MFA off.
+- All of these are in `supabase/config.toml` and applied with `npx supabase config push`.
 - **Anonymous sign-ins:** off.
 
 Authentication → **URL Configuration**:
@@ -114,6 +127,19 @@ npx supabase functions deploy public-trace --use-api --no-verify-jwt
 - Rotating `TRACE_LINK_SECRET` later invalidates **every** customer link that has been issued.
 - If a function fails with an invalid-key error, the project has legacy API keys disabled. Set `SB_PUBLISHABLE_KEY` and `SB_SECRET_KEY` with `secrets set`; the functions read them first.
 
+## 6b. Deploy the password + MFA change (9 Nov 2026)
+
+From this folder, in PowerShell:
+
+```
+npx supabase db push --remote --yes
+npx supabase functions deploy admin-users --use-api
+npx supabase config push --yes
+npm run verify:rls
+```
+
+The first command adds the authenticator requirement to the database. From that moment, sessions without an authenticator code see no data — deploy the new front end (GitHub Desktop → Push origin) at the same time.
+
 ## 7. Run the app against the project
 
 Copy `.env.example` to `.env.local` (Git ignores it) and fill in:
@@ -134,7 +160,9 @@ Run `npm run dev`. The amber **DEMO MODE** strip must be gone. That shows the ap
    select private.bootstrap_first_admin('it.lead@savannahfruits.com', 'Full Name');
    ```
    It refuses to run once an IT Admin exists, and no signed-in user can call it.
-3. Open the invitation email in the same browser where `npm run dev` runs and click **Accept invitation**. You land in the app as IT Admin.
+3. Open the invitation email and click the link. The app asks you to **choose a password**, then to **set up your authenticator app**. You then land in the app as IT Admin.
+
+**Already bootstrapped but no password yet** (accounts created before 9 Nov): Dashboard → Authentication → Users → your user → **Send password recovery**. The email link opens the app at *Choose a new password*, then the authenticator setup. The built-in mailer only delivers to members of your Supabase organisation and about 2 emails per hour.
 
 Every later user is invited from **Users & access** in the app, with role, locations and (for Commercial) clients.
 
@@ -152,7 +180,9 @@ Use one test account per role and two locations, mirroring `scripts/verify-rls.t
 - A suspended user loses access on the next action.
 - An uninvited Google or email identity gets no data.
 - A customer link opens on a phone with mobile data. It shows the full SFCL trace but no collector names or prices. It stops working after **Revoke**.
-- An expired invitation link shows a clear message and the user can still sign in with an email code.
+- An expired or already-used invitation link shows a clear message; IT creates a new link from Users & access.
+- A user who knows the password but has no authenticator code sees no data (try the API directly with that session).
+- **Reset authenticator** makes the user set up the app again at the next sign-in.
 
 ## 11. Host the front end
 
@@ -221,9 +251,11 @@ With sign-ups off, only an invited email can sign in. The app also requires an a
 
 | Symptom | Likely cause |
 |---|---|
-| Invitation or code email never arrives | SMTP not set or domain not verified (Resend → Logs); Auth rate limit still low (step 4.6) |
-| "Email link is invalid or has expired" | Invite older than 1 hour or already used. The user signs in with an email code instead, or the admin resends it from Users & access |
-| Link opens the app but you are not signed in | The app address is missing from Redirect URLs, or the link was opened in a different browser (codes are tied to the requesting browser) |
+| Invitation or reset email never arrives | SMTP not set or domain not verified (Resend → Logs); Auth rate limit still low (step 4.6). Use **Copy link** in Users & access instead |
+| "This link has expired or was already used" | Link older than 24 hours or already opened with Continue. IT creates a new link from Users & access |
+| "That code is not right" at the authenticator step | The phone's clock is off. Set date and time to automatic; use the newest code |
+| User lost their phone | IT → Users & access → **Reset authenticator** (confirm who is asking first) |
+| Self-service reset link opens but you are not signed in | It was opened in a different browser from the one that requested it. Ask IT for a reset link instead (works in any browser) |
 | Customer link says "not available" | Wrong `TRACE_LINK_SECRET`/`APP_URL`, link revoked or expired, or the project is paused |
 | Browser console shows CORS error from a function | The app's address is missing from `ALLOWED_ORIGINS` |
 | Whole app is down and Dashboard says *Paused* | Restore it; then check the keep-alive workflow runs (step 12) |

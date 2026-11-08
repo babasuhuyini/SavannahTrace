@@ -1,4 +1,4 @@
-// Supabase invitation links (and any implicit-flow redirect) come back with the session
+// Links emailed by Supabase's default templates (and any implicit-flow redirect) come back with the session
 // in the URL fragment: #access_token=…&refresh_token=…&type=invite, or with
 // #error=…&error_description=… when the link has expired. That fragment collides with
 // the app's hash router, and the PKCE client does not read it. So it is captured once,
@@ -9,6 +9,8 @@
 export interface AuthFragment {
   access_token?: string;
   refresh_token?: string;
+  /** 'invite' | 'recovery' | 'magiclink' … — recovery means "choose a new password now". */
+  type?: string;
   error?: string;
 }
 
@@ -22,7 +24,7 @@ export function captureAuthFragment(): void {
   const refresh_token = p.get('refresh_token') ?? undefined;
   captured =
     access_token && refresh_token
-      ? { access_token, refresh_token }
+      ? { access_token, refresh_token, type: p.get('type') ?? undefined }
       : { error: p.get('error_description') ?? p.get('error') ?? 'The sign-in link could not be used.' };
   window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#/`);
 }

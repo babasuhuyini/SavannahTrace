@@ -13,10 +13,22 @@ create table auth.users (
   email text,
   email_confirmed_at timestamptz,
   last_sign_in_at timestamptz,
-  banned_until timestamptz
+  banned_until timestamptz,
+  encrypted_password text
+);
+create type auth.factor_status as enum ('unverified', 'verified');
+create table auth.mfa_factors (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id),
+  factor_type text not null default 'totp',
+  status auth.factor_status not null
 );
 create function auth.uid() returns uuid language sql stable as $$
   select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
+$$;
+-- Full claims as JSON (Supabase: request.jwt.claims). The harness sets `aal` here.
+create function auth.jwt() returns jsonb language sql stable as $$
+  select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb
 $$;
 create function auth.role() returns text language sql stable as $$
   select nullif(current_setting('request.jwt.claim.role', true), '')

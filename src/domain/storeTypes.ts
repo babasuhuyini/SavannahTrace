@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { AppUser, CollectionArea, DemoDB, Handoff, Invitation, Location, ProcessingGroup, ReadyEvent, RoleId, Route, TraceEvent, TransformEvent } from '../data/types';
+import type { AppUser, CollectionArea, Collector, DemoDB, Handoff, Invitation, Location, ProcessingGroup, ReadyEvent, RoleId, Route, TraceEvent, TransformEvent } from '../data/types';
 import type { Viewer } from './access';
 import type { Analysis } from './engine';
 
@@ -17,7 +17,7 @@ export interface Toast {
 
 export type InviteInput = Pick<Invitation, 'email' | 'name' | 'role' | 'locationIds' | 'clientNames'>;
 
-/** What a sign-in attempt for an email leads to (demo lookup or live server answer). */
+/** What a sign-in attempt for an email leads to (demo lookup). */
 export type AccountState = 'active' | 'suspended' | 'invited' | 'expired' | 'revoked' | 'unknown';
 
 /** Why a signed-in identity cannot use the app (shown as a dedicated state screen). */
@@ -31,19 +31,66 @@ export interface PendingInvite {
   locationNames: string[];
 }
 
+/** Which sign-in step a signed-in identity still has to complete (live: decided from Auth + database). */
+export type AuthStage = 'set-password' | 'mfa-enroll' | 'mfa-verify';
+
+/** Authenticator-app (TOTP) setup material. Shown once, during setup only. */
+export interface MfaEnrollment {
+  factorId: string;
+  /** Image URL (data: URL) of the QR code to scan. */
+  qr: string;
+  /** Setup key for typing in by hand. */
+  secret: string;
+}
+
+/**
+ * Sign-in: email + password, then a 6-digit code from an authenticator app.
+ * Passwords are passed straight to Supabase Auth and never stored, logged or shown.
+ */
 export interface AuthApi {
-  /** Request a one-time sign-in code by email (never reveals whether the email exists). */
-  sendCode: (email: string) => Promise<Result>;
-  /** Verify the code; the result says where the user goes next. */
-  verifyCode: (email: string, code: string) => Promise<Result & { next?: 'app' | 'accept' | AccessIssue; invite?: PendingInvite }>;
-  /** Activate a pending invitation for the verified email (role/locations were preassigned by IT). */
-  acceptInvitation: (invite: PendingInvite, name: string) => Promise<Result>;
-  /** Start Google sign-in. The verified Google email must match an invitation or account. */
-  google: () => Promise<Result>;
-  /** Resend wait in seconds after a code request (rate limit shown in the UI). */
-  resendAfterSeconds: number;
-  codeLength: number;
-  codeLifetimeMinutes: number;
+  signIn: (email: string, password: string) => Promise<Result>;
+  /** Self-service reset email (neutral answer: never reveals whether the email has an account). */
+  requestPasswordReset: (email: string) => Promise<Result>;
+  /** Use a one-time invitation / password-reset link (after the person clicks Continue). */
+  acceptLink: (tokenHash: string, type: 'invite' | 'recovery') => Promise<Result>;
+  /** Set a new password for the signed-in identity (invitation, reset, or missing password). */
+  setPassword: (password: string) => Promise<Result>;
+  /** Activate a pending invitation (role/locations were preassigned by IT) and set the password. */
+  acceptInvitation: (invite: PendingInvite, name: string, password: string) => Promise<Result>;
+  startMfaEnrollment: () => Promise<Result & { enrollment?: MfaEnrollment }>;
+  confirmMfaEnrollment: (factorId: string, code: string) => Promise<Result>;
+  verifyMfa: (code: string) => Promise<Result>;
+  /** Re-checks the current password and an authenticator code before changing the password. */
+  changePassword: (current: string, code: string, next: string) => Promise<Result>;
+  signOutOtherDevices: () => Promise<Result>;
+}
+
+export type Delivery = 'link' | 'email';
+/** Admin actions that produce a one-time link for IT to send privately. */
+export interface LinkResult extends Result {
+  link?: string | null;
+}
+
+export type MasterImport =
+  | { kind: 'locations'; items: Location[] }
+  | { kind: 'collection_areas'; items: CollectionArea[] }
+  | { kind: 'collectors'; items: (Collector & { areaCode: string })[] }
+  | { kind: 'groups'; items: ProcessingGroup[] };
+
+/** One entry of a bulk event upload. `key` is the deterministic idempotency key. */
+export interface BulkEvent {
+  key: string;
+  event: TraceEvent;
+  summary: string;
+  /** Ready-for-pickup only. */
+  handoff?: { lotId: string; qty: number; product: Handoff['product']; locationId: string; clientName: string; orderRef: string };
+}
+export interface BulkOutcome {
+  key: string;
+  ok: boolean;
+  duplicate?: boolean;
+  error?: string;
+  warnings?: string[];
 }
 
 /**
@@ -76,25 +123,33 @@ export interface Store {
   upsertGroup: (g: ProcessingGroup) => Promise<Result>;
   upsertRoute: (r: Route) => Promise<Result>;
 
-  inviteUser: (i: InviteInput) => Promise<Result>;
-  resendInvite: (id: string) => Promise<Result>;
+  /** Bulk upload of master data: all rows saved, or none (one transaction in live mode). */
+  importMaster: (m: MasterImport) => Promise<Result & { count?: number }>;
+  /** Bulk upload of events, in order. Each entry is validated by the server; repeats are ignored. */
+  recordEvents: (items: BulkEvent[], onProgress?: (done: number, total: number) => void) => Promise<BulkOutcome[]>;
+
+  inviteUser: (i: InviteInput, delivery: Delivery) => Promise<LinkResult>;
+  resendInvite: (id: string, delivery: Delivery) => Promise<LinkResult>;
   revokeInvite: (id: string) => Promise<Result>;
   setUserStatus: (userId: string, status: AppUser['status']) => Promise<Result>;
   setUserAccess: (userId: string, role: RoleId, locationIds: string[], clientNames: string[]) => Promise<Result>;
-  sendRecovery: (userId: string) => Promise<Result>;
+  /** One-time link with which the user chooses a new password (IT never sees or sets it). */
+  passwordResetLink: (userId: string, delivery: Delivery) => Promise<LinkResult>;
+  /** Remove the user's authenticator (lost phone); they set up a new one at next sign-in. */
+  resetMfa: (userId: string) => Promise<Result>;
 
   // session & authentication
   auth: AuthApi;
+  /** The next sign-in step for a signed-in identity, or null when none is pending. */
+  authStage: AuthStage | null;
+  /** Email of the signed-in identity (also while a sign-in step is pending). */
+  authEmail: string | null;
   /** Set when an authenticated identity has no usable access (live mode). */
   accessIssue: AccessIssue | null;
   pendingInvite: PendingInvite | null;
   signOut: () => Promise<void>;
   /** Demo only: switch the simulated signed-in user. */
   switchUser?: (userId: string) => void;
-  /** Demo only: look up what an email would get at sign-in. */
-  demoAccountState?: (email: string) => { state: AccountState; userId?: string; invitationId?: string };
-  /** Demo only: accept an invitation and activate the account. */
-  demoAcceptInvitation?: (invitationId: string, name: string) => string | null;
   reset: () => void;
   refresh: () => Promise<void>;
 }
