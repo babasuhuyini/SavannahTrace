@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Savannah Trace brand</title>
+<meta name="description" content="Savannah Trace brand guidelines: logo, colour, typography and interface rules.">
+<link rel="icon" href="savannah-trace-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --baobab: #1c4532; --baobab-600: #2a6046; --gold: #d2a24c; --ivory: #f6f3eb; --charcoal: #16191a;
+    --white: #fff; --parchment: #f0ece2; --sand: #e5e0d3; --stone: #dcd6c8; --stone-strong: #b5ae9e;
+    --graphite: #3a3d39; --slate: #5a5d55;
+    --sans: 'IBM Plex Sans', system-ui, 'Segoe UI', sans-serif; --mono: 'IBM Plex Mono', Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ivory); color: var(--charcoal); font: 400 15px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  header.top { background: var(--baobab); color: var(--ivory); }
+  header.top .wrap { padding-top: 56px; padding-bottom: 48px; }
+  header.top img { height: 48px; display: block; }
+  header.top h1 { font-size: 40px; font-weight: 600; letter-spacing: -0.02em; margin: 40px 0 8px; line-height: 1.1; }
+  header.top p { margin: 0; color: #cfdcd2; max-width: 620px; }
+  .meta { font: 500 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--gold); margin-top: 28px; }
+  section { padding: 56px 0 8px; }
+  h2 { font-size: 13px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--slate); margin: 0 0 6px; }
+  h3 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 16px; }
+  p.lead { max-width: 680px; color: var(--graphite); margin: 0 0 24px; }
+  .grid { display: grid; gap: 1px; background: var(--stone); border: 1px solid var(--stone); }
+  .g2 { grid-template-columns: repeat(2, 1fr); } .g3 { grid-template-columns: repeat(3, 1fr); } .g5 { grid-template-columns: repeat(5, 1fr); }
+  .cell { background: var(--white); padding: 28px; min-width: 0; }
+  .cell.dark { background: var(--baobab); color: var(--ivory); }
+  .cell.char { background: var(--charcoal); color: var(--ivory); }
+  .cap { font-size: 12px; color: var(--slate); margin-top: 14px; }
+  .dark .cap, .char .cap { color: #c6d4c9; }
+  .logo-stage { min-height: 120px; display: grid; place-items: center; }
+  .logo-stage img { height: 44px; max-width: 100%; }
+  .anat { display: grid; grid-template-columns: 240px 1fr; gap: 32px; align-items: center; }
+  .anat ol { margin: 0; padding-left: 20px; } .anat li { margin-bottom: 8px; }
+  .sizes { display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; }
+  .sizes figure { margin: 0; text-align: center; font: 11px var(--mono); color: var(--slate); }
+  .sizes img { display: block; margin: 0 auto 6px; }
+  .sw { padding: 0; }
+  .sw .chip { height: 116px; }
+  .sw .info { padding: 14px 16px 16px; }
+  .sw b { display: block; font-weight: 600; }
+  .sw code, td code { font: 500 12.5px var(--mono); }
+  .sw .role { font-size: 12.5px; color: var(--slate); margin-top: 4px; }
+  .bar { display: flex; height: 40px; border: 1px solid var(--stone); margin-top: 18px; }
+  table { width: 100%; border-collapse: collapse; background: var(--white); border: 1px solid var(--stone); font-size: 14px; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--stone); vertical-align: middle; }
+  th { background: var(--parchment); font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--graphite); }
+  .pair { display: inline-block; padding: 4px 10px; font-weight: 600; font-size: 13px; }
+  .fail { color: #9b3b26; font-weight: 600; }
+  .type-row { display: grid; grid-template-columns: 160px 1fr; gap: 24px; padding: 18px 0; border-bottom: 1px solid var(--stone); align-items: baseline; }
+  .type-row .k { font: 12px var(--mono); color: var(--slate); }
+  .ui-demo { display: grid; grid-template-columns: 220px 1fr; background: var(--white); border: 1px solid var(--stone); }
+  .ui-nav { border-right: 1px solid var(--stone); padding: 16px 0; background: var(--ivory); }
+  .ui-nav div { padding: 7px 18px; font-size: 14px; color: var(--graphite); display: flex; gap: 10px; align-items: center; }
+  .ui-nav div.on { font-weight: 600; color: var(--charcoal); }
+  .ui-nav i { width: 14px; height: 14px; border: 1.75px solid var(--slate); display: inline-block; }
+  .ui-nav .on i { border-color: var(--baobab-600); border-width: 2.4px; }
+  .ui-main { padding: 22px; }
+  .btn { display: inline-block; font: 600 14px var(--sans); padding: 9px 16px; border-radius: 2px; border: 1px solid var(--baobab); background: var(--baobab); color: #fff; margin-right: 8px; }
+  .btn.sec { background: var(--white); color: var(--charcoal); border-color: var(--stone-strong); }
+  .tag { display: inline-block; font: 600 11px var(--mono); letter-spacing: .04em; padding: 1px 6px; border-radius: 2px; margin-right: 6px; }
+  .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--stone); border: 1px solid var(--stone); }
+  .dos > div { background: var(--white); padding: 22px 24px; }
+  .dos h4 { margin: 0 0 10px; font-size: 14px; }
+  .dos ul { margin: 0; padding-left: 18px; color: var(--graphite); } .dos li { margin-bottom: 6px; }
+  .bad { opacity: .9; }
+  footer { margin-top: 64px; border-top: 1px solid var(--stone); padding: 24px 0 48px; font-size: 13px; color: var(--slate); }
+  @media (max-width: 860px) {
+    .g3, .g5 { grid-template-columns: repeat(2, 1fr); } .anat, .ui-demo, .type-row { grid-template-columns: 1fr; }
+    .ui-nav { border-right: 0; border-bottom: 1px solid var(--stone); } header.top h1 { font-size: 30px; }
+  }
+  @media (max-width: 560px) { .g2, .g3, .g5, .dos { grid-template-columns: 1fr; } .wrap { padding: 0 16px; } .cell { padding: 20px; } table { font-size: 13px; } th, td { padding: 8px 10px; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <img src="savannah-trace-logo-reversed.svg" alt="Savannah Trace">
+    <h1>Brand guidelines</h1>
+    <p>Chain-of-custody traceability for organic shea, from the savannah of northern Ghana to the client. The brand should look as trustworthy as the record it carries: exact, calm and accountable.</p>
+    <div class="meta">Version 1.0 · 8 November 2026 · Savannah Fruits Company Limited</div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<section>
+  <h2>01 · Logo</h2>
+  <h3>Sun, horizon, route</h3>
+  <div class="anat">
+    <img src="savannah-trace-mark.svg" alt="" width="240" height="240" style="display:block">
+    <div>
+      <p class="lead" style="margin-bottom:16px">A Shea-gold sun rising over the savannah horizon. Below it, the custody route runs from the origin lot to the destination lot: the place, the product and the chain in one glyph. The lots are square because every lot in Savannah Trace is a box with an ID.</p>
+      <ol>
+        <li><b>Sun</b>: Shea Gold, radius 9 on a 32-unit grid.</li>
+        <li><b>Horizon</b>: Kernel Ivory, 25 × 1.8.</li>
+        <li><b>Route</b>: from the <b>origin lot</b> (Ivory) to the <b>destination lot</b> (Gold), lots 4.8 × 4.8.</li>
+        <li><b>Tile</b>: Baobab, radius 1.5. Square, never rounded further.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Lockups</h2>
+  <div class="grid g3">
+    <div class="cell"><div class="logo-stage"><img src="savannah-trace-logo.svg" alt="Primary logo"></div><div class="cap">Primary · white or Kernel Ivory</div></div>
+    <div class="cell dark"><div class="logo-stage"><img src="savannah-trace-logo-reversed.svg" alt="Reversed logo"></div><div class="cap">Reversed · Baobab or Charcoal</div></div>
+    <div class="cell"><div class="logo-stage"><img src="savannah-trace-logo-mono.svg" alt="One-colour logo"></div><div class="cap">One ink · stamps and single-colour print</div></div>
+  </div>
+  <p class="cap" style="margin-top:12px">Wordmark: IBM Plex Sans, <b>Savannah</b> SemiBold + Trace Regular, tracking −1%. Letters are outlined in the SVG files.</p>
+</section>
+
+<section>
+  <h2>Size and space</h2>
+  <div class="grid g2">
+    <div class="cell">
+      <div class="sizes">
+        <figure><img src="savannah-trace-mark.svg" width="16" height="16" alt="">16</figure>
+        <figure><img src="savannah-trace-mark.svg" width="24" height="24" alt="">24</figure>
+        <figure><img src="savannah-trace-mark.svg" width="32" height="32" alt="">32</figure>
+        <figure><img src="savannah-trace-mark.svg" width="48" height="48" alt="">48</figure>
+        <figure><img src="savannah-trace-mark.svg" width="96" height="96" alt="">96 px</figure>
+      </div>
+      <div class="cap">Minimum: the mark at 16 px or 5 mm; the lockup at 120 px or 30 mm wide.</div>
+    </div>
+    <div class="cell">
+      <div style="display:inline-block;padding:11px;outline:1px dashed var(--stone-strong)"><img src="savannah-trace-logo.svg" alt="" style="height:44px;display:block"></div>
+      <div class="cap">Clear space: half the mark's height around the lockup; one lot width around the mark alone.</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>02 · Colour</h2>
+  <h3>Core palette</h3>
+  <div class="grid g5">
+    <div class="cell sw"><div class="chip" style="background:#1c4532"></div><div class="info"><b>Baobab</b><code>#1C4532</code><div class="role">Primary · tile, buttons, headers</div></div></div>
+    <div class="cell sw"><div class="chip" style="background:#2a6046"></div><div class="info"><b>Baobab 600</b><code>#2A6046</code><div class="role">Links, focus, success</div></div></div>
+    <div class="cell sw"><div class="chip" style="background:#d2a24c"></div><div class="info"><b>Shea Gold</b><code>#D2A24C</code><div class="role">Accent · dark grounds only</div></div></div>
+    <div class="cell sw"><div class="chip" style="background:#f6f3eb;border-bottom:1px solid var(--stone)"></div><div class="info"><b>Kernel Ivory</b><code>#F6F3EB</code><div class="role">Page, reversed text</div></div></div>
+    <div class="cell sw"><div class="chip" style="background:#16191a"></div><div class="info"><b>Charcoal</b><code>#16191A</code><div class="role">Text, one-ink logo</div></div></div>
+  </div>
+  <div class="bar" title="Proportion">
+    <div style="flex:70;background:var(--ivory)"></div><div style="flex:20;background:var(--charcoal)"></div><div style="flex:8;background:var(--baobab)"></div><div style="flex:2;background:var(--gold)"></div>
+  </div>
+  <p class="cap">Proportion: 70% Ivory and white · 20% Charcoal · 8% Baobab · 2% Shea Gold. Gold is a signature, not a fill.</p>
+
+  <h3 style="margin-top:36px">Neutrals, states and product colours</h3>
+  <div class="grid g5">
+    <div class="cell sw"><div class="chip" style="background:#f0ece2;height:56px"></div><div class="info"><b>Parchment</b><code>#F0ECE2</code></div></div>
+    <div class="cell sw"><div class="chip" style="background:#e5e0d3;height:56px"></div><div class="info"><b>Sand</b><code>#E5E0D3</code></div></div>
+    <div class="cell sw"><div class="chip" style="background:#dcd6c8;height:56px"></div><div class="info"><b>Stone</b><code>#DCD6C8</code><div class="role">Hairline rules</div></div></div>
+    <div class="cell sw"><div class="chip" style="background:#5a5d55;height:56px"></div><div class="info"><b>Slate</b><code>#5A5D55</code><div class="role">Muted text</div></div></div>
+    <div class="cell sw"><div class="chip" style="background:#3a3d39;height:56px"></div><div class="info"><b>Graphite</b><code>#3A3D39</code><div class="role">Secondary text</div></div></div>
+    <div class="cell sw"><div class="chip" style="background:#8a5a10;height:56px"></div><div class="info"><b>Harmattan</b><code>#8A5A10</code><div class="role">Review, warnings</div></div></div>
+    <div class="cell sw"><div class="chip" style="background:#9b3b26;height:56px"></div><div class="info"><b>Laterite</b><code>#9B3B26</code><div class="role">Blocking, errors</div></div></div>
+    <div class="cell sw"><div class="chip" style="background:#2c5466;height:56px"></div><div class="info"><b>Volta</b><code>#2C5466</code><div class="role">Information, transit</div></div></div>
+    <div class="cell sw"><div class="chip" style="display:flex;height:56px"><span style="flex:1;background:#8a5a2b"></span><span style="flex:1;background:#b7821c"></span><span style="flex:1;background:#2a6046"></span><span style="flex:1;background:#2f6f73"></span></div><div class="info"><b>Product</b><div class="role">OFN · ODK · OSB · refined</div></div></div>
+    <div class="cell sw"><div class="chip" style="background:#e8eee8;height:56px"></div><div class="info"><b>Baobab wash</b><code>#E8EEE8</code></div></div>
+  </div>
+
+  <h3 style="margin-top:36px">Contrast</h3>
+  <table>
+    <thead><tr><th>Pair</th><th>Ratio</th><th>WCAG 2.1</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pair" style="background:#f6f3eb;color:#16191a">Charcoal on Ivory</span></td><td><code>15.9 : 1</code></td><td>AAA</td></tr>
+      <tr><td><span class="pair" style="background:#f6f3eb;color:#1c4532">Baobab on Ivory</span></td><td><code>9.7 : 1</code></td><td>AAA</td></tr>
+      <tr><td><span class="pair" style="background:#fff;color:#2a6046">Baobab 600 on white</span></td><td><code>7.3 : 1</code></td><td>AAA</td></tr>
+      <tr><td><span class="pair" style="background:#f6f3eb;color:#5a5d55">Slate on Ivory</span></td><td><code>6.1 : 1</code></td><td>AA</td></tr>
+      <tr><td><span class="pair" style="background:#1c4532;color:#d2a24c">Shea Gold on Baobab</span></td><td><code>4.6 : 1</code></td><td>AA</td></tr>
+      <tr><td><span class="pair" style="background:#16191a;color:#d2a24c">Shea Gold on Charcoal</span></td><td><code>7.6 : 1</code></td><td>AAA</td></tr>
+      <tr><td><span class="pair" style="background:#f6e5df;color:#9b3b26">Laterite on wash</span></td><td><code>5.6 : 1</code></td><td>AA</td></tr>
+      <tr><td><span class="pair" style="background:#f6f3eb;color:#d2a24c">Shea Gold on Ivory</span></td><td><code>2.1 : 1</code></td><td class="fail">Fails: never text on light</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>03 · Typography</h2>
+  <h3>IBM Plex, one family</h3>
+  <div class="type-row"><div class="k">Sans 600 · 26</div><div style="font-size:26px;font-weight:600;letter-spacing:-0.01em">Organic Shea Refined Butter</div></div>
+  <div class="type-row"><div class="k">Sans 600 · 22</div><div style="font-size:22px;font-weight:600">System overview</div></div>
+  <div class="type-row"><div class="k">Sans 400 · 14</div><div style="font-size:14px;max-width:560px">Received 4,250 kg at Tamba Butter Centre. Collector names and commercial terms are never shown to clients.</div></div>
+  <div class="type-row"><div class="k">Mono 500 · 13</div><div style="font:500 13px var(--mono)">ORSB 26901-R1 · SFCL 26901 · LPO-90411 · 20,160 kg</div></div>
+  <div class="type-row"><div class="k">Sans 600 · 11 caps</div><div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--slate)">Traceability record · ready for pickup</div></div>
+  <p class="cap">Weights 400 / 500 / 600 only. Mono is for identifiers and quantities. Bundled with the app; email falls back to Arial and Consolas.</p>
+</section>
+
+<section>
+  <h2>04 · Interface</h2>
+  <h3>Square, flat, quiet</h3>
+  <div class="ui-demo">
+    <div class="ui-nav">
+      <div class="on"><i></i>System overview</div><div><i></i>Trace explorer</div><div><i></i>Reports</div><div><i></i>Handoffs</div>
+    </div>
+    <div class="ui-main">
+      <div style="font-size:22px;font-weight:600;margin-bottom:4px">Handoffs</div>
+      <div style="color:var(--slate);font-size:14px;margin-bottom:18px">Prepare client pickups and customer trace links.</div>
+      <span class="btn">Create trace link</span><span class="btn sec">Download CSV</span>
+      <div style="margin-top:18px">
+        <span class="tag" style="background:#e8eee8;color:#2a6046">READY</span>
+        <span class="tag" style="background:#f6eddb;color:#8a5a10">REVIEW</span>
+        <span class="tag" style="background:#f6e5df;color:#9b3b26">BLOCKED</span>
+        <span class="tag" style="background:#e3ebee;color:#2c5466">IN TRANSIT</span>
+      </div>
+    </div>
+  </div>
+  <div class="dos" style="margin-top:24px">
+    <div><h4>Do</h4><ul>
+      <li>2 px corner radius on controls; 4 px is the maximum.</li>
+      <li>Active navigation: SemiBold label and a stronger icon on a transparent background.</li>
+      <li>Separate with 1 px Stone hairlines.</li>
+      <li>Use colour for state and data only.</li>
+    </ul></div>
+    <div class="bad"><h4>Don't</h4><ul>
+      <li>Pills, capsules, lozenges or oversized rounding.</li>
+      <li>A tinted background, coloured left stripe or card around the active nav item.</li>
+      <li>Gradients or decorative shadows.</li>
+      <li>Shea Gold text on light backgrounds.</li>
+    </ul></div>
+  </div>
+</section>
+
+<section>
+  <h2>05 · Voice</h2>
+  <h3>Exact, calm, accountable</h3>
+  <div class="dos">
+    <div><h4>Write</h4><ul>
+      <li>"Received 4,250 kg at Tamba Butter Centre."</li>
+      <li>"Trace geometry is illustrative."</li>
+      <li>"Issued by Savannah Fruits Company Limited through Savannah Trace."</li>
+    </ul></div>
+    <div><h4>Avoid</h4><ul>
+      <li>"Seamless end-to-end visibility!"</li>
+      <li>"GPS-verified", "blockchain-secured".</li>
+      <li>Collector names on anything a client sees.</li>
+    </ul></div>
+  </div>
+  <p class="cap">Two words, both capitalised: <b>Savannah Trace</b>. Sentence case for buttons and headings. Numerals with units. No exclamation marks or emoji.</p>
+</section>
+
+</main>
+<footer><div class="wrap">Savannah Trace brand guidelines v1.0 · Savannah Fruits Company Limited · Full text in docs/BRAND.md. Logo files in docs/brand/.</div></footer>
+</body>
+</html>

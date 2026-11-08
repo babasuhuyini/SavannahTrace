@@ -1,0 +1,75 @@
+# Supabase CLI configuration for local development (`supabase start`).
+# Hosted-project settings (Auth providers, redirect URLs, SMTP) are configured in
+# the Supabase Dashboard — see docs/SUPABASE_SETUP.md. No secrets in this file.
+
+project_id = "savannah-trace"
+
+[api]
+enabled = true
+port = 54321
+# Only `public` is exposed through the Data API. The `private` schema (authorization
+# helpers) is deliberately NOT listed.
+schemas = ["public"]
+extra_search_path = ["public"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 17
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173", "http://127.0.0.1:5173"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+# Invitation only: nobody can create an account by themselves (OTP or Google).
+# Invites are sent by the admin-users Edge Function with the Auth admin API.
+enable_signup = false
+enable_anonymous_sign_ins = false
+
+[auth.rate_limit]
+email_sent = 10
+token_verifications = 30
+
+[auth.email]
+enable_signup = false
+double_confirm_changes = true
+enable_confirmations = true
+otp_length = 6
+otp_expiry = 3600 # also the lifetime of invitation links
+max_frequency = "60s"
+
+# Branded templates (local dev). For the hosted project paste the same files into
+# Dashboard → Authentication → Emails → Templates — see docs/SUPABASE_SETUP.md §4.
+[auth.email.template.magic_link]
+subject = "Your Savannah Trace sign-in code"
+content_path = "./supabase/templates/magic_link.html"
+
+# An invited user whose link expired and who asks for a code gets the confirmation email.
+[auth.email.template.confirmation]
+subject = "Your Savannah Trace sign-in code"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.invite]
+subject = "You have been invited to Savannah Trace"
+content_path = "./supabase/templates/invite.html"
+
+[auth.external.google]
+enabled = false # set true once the Google Cloud OAuth client exists
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+skip_nonce_check = false
+
+[functions.public-trace]
+verify_jwt = false # anonymous customers; token is validated inside the function
+
+[functions.trace-link]
+verify_jwt = true
+
+[functions.admin-users]
+verify_jwt = true

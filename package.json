@@ -1,0 +1,45 @@
+{
+  "name": "savannah-trace",
+  "private": true,
+  "version": "0.1.0",
+  "description": "SFCL traceability front-end prototype (browser-only demo data)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:lan": "vite --host",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "verify:rls": "tsx scripts/verify-rls.ts",
+    "seed:sql": "tsx scripts/generate-seed-sql.ts",
+    "export:github": "node scripts/export-for-github.mjs"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/ibm-plex-sans": "^5.3.0",
+    "@supabase/supabase-js": "^2.119.0",
+    "lucide": "^1.70.0",
+    "lucide-react": "^1.70.0",
+    "maplibre-gl": "^5.24.0",
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.15",
+    "@types/geojson": "^7946.0.16",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@types/topojson-client": "^3.1.5",
+    "@vitejs/plugin-react": "^4.7.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vite": "^6.4.5"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

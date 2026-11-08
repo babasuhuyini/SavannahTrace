@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Sign in to Savannah Trace</title></head>
+<!-- Savannah Trace auth email. Paste into Supabase Dashboard → Authentication → Emails → Templates.
+     No remote images (they are often blocked); the wordmark is live text. See docs/BRAND.md. -->
+<body style="margin:0;padding:0;background:#f6f3eb;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f3eb;">
+<tr><td align="center" style="padding:32px 16px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border:1px solid #dcd6c8;">
+    <tr><td style="background:#1c4532;padding:18px 28px;font-family:'IBM Plex Sans',Arial,Helvetica,sans-serif;font-size:18px;letter-spacing:-0.01em;color:#f6f3eb;">
+      <span style="display:inline-block;width:10px;height:10px;background:#d2a24c;margin-right:10px;vertical-align:1px;"></span><strong style="font-weight:600;">Savannah</strong> <span style="color:#d2a24c;">Trace</span>
+    </td></tr>
+    <tr><td style="padding:28px;font-family:'IBM Plex Sans',Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#16191a;">
+      <h1 style="margin:0 0 12px;font-size:20px;font-weight:600;">Sign in to Savannah Trace</h1>
+      <p style="margin:0 0 20px;">Use this code on the Savannah Trace sign-in screen. Enter it in the browser where you requested it.</p>
+      <p style="margin:0 0 6px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5a5d55;">Your sign-in code</p>
+      <p style="margin:0 0 20px;font-family:'IBM Plex Mono',Consolas,'Courier New',monospace;font-size:30px;font-weight:600;letter-spacing:0.18em;color:#1c4532;">{{ .Token }}</p>
+      <p style="margin:0 0 24px;">Or open Savannah Trace directly with the button below.</p>
+      <table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:#1c4532;border-radius:2px;">
+        <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:11px 20px;font-family:'IBM Plex Sans',Arial,Helvetica,sans-serif;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;">Open Savannah Trace</a>
+      </td></tr></table>
+      <p style="margin:24px 0 0;font-size:13px;color:#5a5d55;">The code and button expire in 1 hour and work once. If you did not expect this email, ignore it — nobody can sign in without access to your mailbox.</p>
+    </td></tr>
+    <tr><td style="padding:16px 28px;border-top:1px solid #dcd6c8;font-family:'IBM Plex Sans',Arial,Helvetica,sans-serif;font-size:12px;color:#5a5d55;">
+      Savannah Trace · chain-of-custody traceability for organic shea<br>Savannah Fruits Company Limited
+    </td></tr>
+  </table>
+</td></tr>
+</table>
+</body>
+</html>
